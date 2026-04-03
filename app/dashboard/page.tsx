@@ -6,7 +6,7 @@ import { getSupabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import {
   FileText, CheckCircle2, Loader2, Download, Menu, Plus, MessageSquare, Clock, Trash2,
-  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine
+  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine, Linkedin
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -396,6 +396,13 @@ export default function DashboardChat() {
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[#4a9eff]/20 hover:bg-[#4a9eff]/10 transition-colors text-xs text-[#4a9eff]"
           >
             <PenLine className="w-4 h-4" /> Create Resume
+          </Link>
+
+          <Link
+            href="/linkedin-optimizer"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[#0A66C2]/20 hover:bg-[#0A66C2]/10 transition-colors text-xs text-[#0A66C2]"
+          >
+            <Linkedin className="w-4 h-4" /> LinkedIn Optimizer
           </Link>
 
           <div className="pt-4 space-y-1">
