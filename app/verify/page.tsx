@@ -33,7 +33,7 @@ export default function VerifyPage() {
           </h1>
           
           <p className="text-[#888] mb-8 leading-relaxed">
-            We've sent a verification link to your email address. Please click the link to verify your account.
+            We&apos;ve sent a verification link to your email address. Please click the link to verify your account.
           </p>
 
           <div className="space-y-4">
@@ -49,7 +49,7 @@ export default function VerifyPage() {
             </Button>
             
             <p className="text-xs text-white/40 pt-4">
-              Didn't receive an email? Check your spam folder or try signing up again.
+              Didn&apos;t receive an email? Check your spam folder or try signing up again.
             </p>
           </div>
         </div>
