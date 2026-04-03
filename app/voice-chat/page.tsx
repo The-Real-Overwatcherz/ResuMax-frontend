@@ -31,7 +31,7 @@ export default function VoiceChatPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
-  const synthRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const [authChecked, setAuthChecked] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -123,37 +123,33 @@ export default function VoiceChatPage() {
     }
 
     recognitionRef.current = recognition
+
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const speak = useCallback(
-    (text: string) => {
-      if (!ttsEnabled || typeof window === 'undefined') return
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.rate = 1.05
-      utterance.pitch = 1.0
+  const playAudio = useCallback(
+    (audioBase64: string) => {
+      if (!ttsEnabled) return
+      // Stop any current playback
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
 
-      // Try to pick a natural voice
-      const voices = window.speechSynthesis.getVoices()
-      const preferred = voices.find(
-        (v) =>
-          v.name.includes('Samantha') ||
-          v.name.includes('Google') ||
-          v.name.includes('Natural') ||
-          v.name.includes('Female'),
-      )
-      if (preferred) utterance.voice = preferred
-
-      utterance.onstart = () => setIsSpeaking(true)
-      utterance.onend = () => setIsSpeaking(false)
-      synthRef.current = utterance
-      window.speechSynthesis.speak(utterance)
+      const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`)
+      audioRef.current = audio
+      audio.onplay = () => setIsSpeaking(true)
+      audio.onended = () => setIsSpeaking(false)
+      audio.onerror = () => setIsSpeaking(false)
+      audio.play().catch(() => setIsSpeaking(false))
     },
     [ttsEnabled],
   )
 
   const stopSpeaking = () => {
-    window.speechSynthesis.cancel()
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
     setIsSpeaking(false)
   }
 
@@ -205,7 +201,9 @@ export default function VoiceChatPage() {
         }
 
         setMessages((prev) => [...prev, aiMsg])
-        speak(data.answer)
+        if (data.audio) {
+          playAudio(data.audio)
+        }
       } catch (err) {
         console.error('Voice chat error:', err)
         const errorMsg: ChatMessage = {
@@ -219,7 +217,7 @@ export default function VoiceChatPage() {
         setIsProcessing(false)
       }
     },
-    [isProcessing, resumeContext, messages, speak],
+    [isProcessing, resumeContext, messages, playAudio],
   )
 
   const toggleListening = () => {
