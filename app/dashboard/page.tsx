@@ -6,7 +6,7 @@ import { getSupabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import {
   FileText, CheckCircle2, Loader2, Download, Menu, Plus, MessageSquare, Clock, Trash2,
-  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine, Linkedin
+  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine, Linkedin, Mic
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -403,6 +403,13 @@ export default function DashboardChat() {
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[#0A66C2]/20 hover:bg-[#0A66C2]/10 transition-colors text-xs text-[#0A66C2]"
           >
             <Linkedin className="w-4 h-4" /> LinkedIn Optimizer
+          </Link>
+
+          <Link
+            href="/voice-chat"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors text-xs text-emerald-400"
+          >
+            <Mic className="w-4 h-4" /> Voice Chat
           </Link>
 
           <div className="pt-4 space-y-1">
