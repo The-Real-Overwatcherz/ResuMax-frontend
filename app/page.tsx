@@ -7,6 +7,8 @@ import { PrecisionPipeline } from '@/components/landing/PrecisionPipeline'
 import { ComponentsSection } from '@/components/landing/ComponentsSection'
 import { FeedbackSection } from '@/components/landing/FeedbackSection'
 import { OptimizerSection } from '@/components/landing/OptimizerSection'
+import { PricingSection } from '@/components/landing/PricingSection'
+import { FAQSection } from '@/components/landing/FAQSection'
 import { SiteFooter } from '@/components/landing/SiteFooter'
 
 const SceneCanvas = dynamic(() => import('@/components/three/SceneCanvas'), {
@@ -24,6 +26,8 @@ export default function LandingPage() {
         <ComponentsSection />
         <FeedbackSection />
         <OptimizerSection />
+        <PricingSection />
+        <FAQSection />
         <SiteFooter />
       </div>
     </>

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { gsap } from '@/lib/gsap-config'
 import { useLenis } from '@/components/providers/LenisProvider'
 import { Button } from '@/components/ui/button'
+import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { ArrowRight } from 'lucide-react'
 
 import { ResumePanel } from './ResumePanel'
@@ -123,14 +124,13 @@ export function HeroSection() {
           >
             Your resume, engineered for impact.
           </p>
-          <div ref={ctaRef} className="mt-8">
-            <Button
-              variant="outline"
-              className="h-12 px-7 text-sm tracking-[0.12em] uppercase border-white/60 hover:bg-white hover:text-black transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+          <div ref={ctaRef} className="mt-8 relative z-50">
+            <ShimmerButton
+              className="h-13 px-8 text-sm tracking-[0.12em] uppercase font-bold flex items-center justify-center gap-2 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all duration-500"
             >
               Start Analyzing
-              <ArrowRight className="ml-2 size-4" />
-            </Button>
+              <ArrowRight className="size-4" />
+            </ShimmerButton>
           </div>
         </div>
 

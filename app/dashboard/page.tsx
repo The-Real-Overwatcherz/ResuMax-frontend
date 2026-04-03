@@ -4,10 +4,11 @@ import dynamic from 'next/dynamic'
 import React, { useEffect, useState, useRef } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { 
+import {
   FileText, CheckCircle2, Loader2, Download, Menu, Plus, MessageSquare, Clock, Trash2,
-  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight
+  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine
 } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 // Prevent static prerendering
@@ -389,6 +390,13 @@ export default function DashboardChat() {
           >
             <Plus className="w-4 h-4" /> New Analysis
           </button>
+
+          <Link
+            href="/create"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[#4a9eff]/20 hover:bg-[#4a9eff]/10 transition-colors text-xs text-[#4a9eff]"
+          >
+            <PenLine className="w-4 h-4" /> Create Resume
+          </Link>
 
           <div className="pt-4 space-y-1">
             <p className="px-3 text-[10px] text-white/40 font-mono mb-2 uppercase">Past Analyses</p>

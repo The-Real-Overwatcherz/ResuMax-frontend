@@ -165,6 +165,11 @@ export function ComponentsSection() {
         <p className="font-sans text-[#a3a3a3] text-[16px] leading-relaxed max-w-md mx-auto">
           We didn&apos;t just build a wrapper. Every micro-service is a purpose-built deterministic engine designed to crack the ATS code.
         </p>
+        <div className="mt-8">
+          <a href="https://watermelon.sh" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-[0.2em] bg-emerald-400/10 px-4 py-2 rounded-full border border-emerald-400/20 shadow-[0_0_15px_rgba(52,211,153,0.1)] hover:shadow-[0_0_25px_rgba(52,211,153,0.2)]">
+            UI powered by Watermelon 🍉
+          </a>
+        </div>
       </div>
 
       {/* Horizontal Phase Scroller */}

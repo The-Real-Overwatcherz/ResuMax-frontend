@@ -10,14 +10,20 @@ import { AuthModal } from '@/components/landing/AuthModal'
 import { User } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-const navLinks = [
-  { label: 'Work', href: '/#pipeline' },
-  { label: 'Features', href: '/#components' },
+import { useRouter } from 'next/navigation'
+import { ContinuousTabs } from '@/components/ui/continuous-tabs'
+
+const navTabs = [
+  { id: '/', label: 'Home' },
+  { id: '#pipeline', label: 'Work' },
+  { id: '#components', label: 'Features' },
+  { id: '#pricing', label: 'Pricing' },
 ]
 
 export function Navbar() {
   const navRef = useRef<HTMLElement>(null)
   const pathname = usePathname()
+  const router = useRouter()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
   
@@ -60,22 +66,28 @@ export function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="fixed bottom-6 left-1/2 z-[100] h-16 flex items-center justify-between px-6 transition-all duration-300 bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-full w-[95%] max-w-[600px] gap-6"
+      className="fixed bottom-6 left-1/2 z-[100] h-16 flex items-center justify-between px-8 transition-all duration-300 bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-full w-auto max-w-[95vw] gap-8 xl:gap-12"
     >
       <Link href="/" className="font-mono text-[13px] tracking-[0.15em] text-white font-medium hover:text-gray-300 transition-colors flex-shrink-0">
         R<span className="hidden sm:inline">ESUMAX</span>
       </Link>
 
-      <div className="flex items-center gap-6 text-sm">
-        {navLinks.map((link) => (
-          <Link
-            key={link.label}
-            href={link.href}
-            className="text-[#888] hover:text-white transition-colors duration-200 whitespace-nowrap font-medium"
-          >
-            {link.label}
-          </Link>
-        ))}
+      <div className="flex items-center">
+        <ContinuousTabs 
+          tabs={navTabs} 
+          defaultActiveId='/'
+          onChange={(id) => {
+            if (id === '/' && pathname === '/') {
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+              return
+            }
+            if (id.startsWith('#')) {
+              router.push(`/${id}`)
+            } else {
+              router.push(id)
+            }
+          }} 
+        />
       </div>
 
       <div className="flex items-center gap-3 flex-shrink-0">
