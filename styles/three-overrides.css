@@ -1,0 +1,5 @@
+/* Three.js canvas element specific styles */
+canvas.three-bg {
+  display: block;
+  outline: none;
+}

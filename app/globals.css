@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── shadcn/ui CSS Variables (dark by default — matches ResuMax design) ─────── */
+:root {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.768);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.556 0 0);
+  --radius: 0.625rem;
+
+  /* ── ResuMax Design Tokens ─────────────────────────────────────────────────── */
+  --color-bg-base:        #080808;
+  --color-bg-surface:     #111111;
+  --color-bg-elevated:    #1a1a1a;
+  --color-bg-overlay:     #222222;
+
+  --color-text-primary:   #FFFFFF;
+  --color-text-secondary: #AAAAAA;
+  --color-text-muted:     #666666;
+  --color-text-disabled:  #333333;
+
+  --color-border-subtle:  #1e1e1e;
+  --color-border-default: #2a2a2a;
+  --color-border-strong:  #3d3d3d;
+  --color-border-white:   #FFFFFF1A;
+
+  --color-glow-blue:      #4a9eff;
+  --color-glow-white:     #FFFFFF40;
+  --color-score-low:      #ff4444;
+  --color-score-mid:      #ffaa00;
+  --color-score-high:     #FFFFFF;
+
+  --color-cube-solid:     #1a1a1a;
+  --color-cube-wire:      #2a2a2a;
+  --color-cube-glow:      #4a9eff55;
+  --color-canvas-fog:     #080808;
+
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md:  0 8px 32px rgba(0,0,0,0.6);
+  --shadow-lg:  0 16px 64px rgba(0,0,0,0.8);
+  --shadow-glow-white: 0 0 30px rgba(255,255,255,0.08);
+  --shadow-glow-blue:  0 0 40px rgba(74,158,255,0.3);
+}
+
+/* ─── Tailwind v4 Theme (CSS-first, replaces tailwind.config.js) ─────────── */
+@theme inline {
+  /* Fonts */
+  --font-sans: var(--font-sans), 'Inter', system-ui, sans-serif;
+  --font-mono: var(--font-mono), 'JetBrains Mono', 'Fira Code', monospace;
+  --font-bebas: var(--font-bebas), 'Bebas Neue', sans-serif;
+  --font-dm: var(--font-dm), 'DM Sans', sans-serif;
+
+  /* shadcn color tokens → Tailwind utilities (bg-primary, text-muted, etc.) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Radii */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* ResuMax palette → Tailwind utilities (bg-resumax-950, text-resumax-200, etc.) */
+  --color-resumax-950: #080808;
+  --color-resumax-900: #111111;
+  --color-resumax-800: #1a1a1a;
+  --color-resumax-700: #222222;
+  --color-resumax-600: #2a2a2a;
+  --color-resumax-500: #333333;
+  --color-resumax-400: #555555;
+  --color-resumax-300: #666666;
+  --color-resumax-200: #AAAAAA;
+  --color-resumax-100: #DDDDDD;
+
+  --color-glow-blue: #4a9eff;
+  --color-glow-white: rgba(255,255,255,0.25);
+
+  --color-score-low: #ff4444;
+  --color-score-mid: #ffaa00;
+  --color-score-high: #ffffff;
+
+  /* Display font sizes */
+  --font-size-display-xl: 96px;
+  --line-height-display-xl: 0.95;
+  --font-size-display-lg: 72px;
+  --line-height-display-lg: 1.0;
+  --font-size-display-md: 48px;
+  --line-height-display-md: 1.05;
+
+  /* Animations */
+  --animate-scroll-bounce: scrollBounce 1.5s ease-in-out infinite;
+  --animate-glow-pulse: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes scrollBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes scan {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes reveal {
+  0% { clip-path: inset(0 0 100% 0); }
+  100% { clip-path: inset(0 0 0% 0); }
+}
+
+@keyframes dash {
+  from { stroke-dashoffset: 214; }
+  to { stroke-dashoffset: 13; }
+}
+
+/* ─── Global Styles ──────────────────────────────────────────────────────────── */
+
+/* Hide default cursor — custom cursor active */
+* { cursor: none !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #080808; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* Three.js canvas — always behind everything */
+canvas.three-bg {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* All HTML content sits above canvas */
+.page-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+/* Prevent flash of white */
+html, body {
+  background-color: #080808;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* Reduced motion override */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
