@@ -94,6 +94,7 @@ export default function DashboardChat() {
 
   useEffect(() => {
     fetchHistory()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const loadHistoricalAnalysis = async (aid: string) => {
@@ -754,7 +755,7 @@ export default function DashboardChat() {
                         <>
                           <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                           <div>
-                            <h4 className="text-xs font-medium text-white/70 mb-3">💡 Shruti's Recommendations</h4>
+                            <h4 className="text-xs font-medium text-white/70 mb-3">💡 Shruti&apos;s Recommendations</h4>
                             <div className="space-y-2">
                               {skillRecommendations.map((rec: string, i: number) => (
                                 <div key={i} className="flex items-start gap-2 text-xs text-white/60">

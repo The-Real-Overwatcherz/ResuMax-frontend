@@ -7,7 +7,8 @@ export function AtomWireframe3D() {
   const mountRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!mountRef.current) return
+    const currentMount = mountRef.current
+    if (!currentMount) return
 
     // Setup Scene
     const scene = new THREE.Scene()
@@ -24,10 +25,10 @@ export function AtomWireframe3D() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     
     // Clear any existing children (React StrictMode defense)
-    while (mountRef.current.firstChild) {
-        mountRef.current.removeChild(mountRef.current.firstChild)
+    while (currentMount.firstChild) {
+        currentMount.removeChild(currentMount.firstChild)
     }
-    mountRef.current.appendChild(renderer.domElement)
+    currentMount.appendChild(renderer.domElement)
 
     // Base orbital group that will rotate continuously
     const orbitalGroup = new THREE.Group()
@@ -133,8 +134,8 @@ export function AtomWireframe3D() {
     return () => {
         window.removeEventListener('mousemove', handleMouseMove)
         cancelAnimationFrame(animationFrameId)
-        if (mountRef.current && renderer.domElement) {
-            mountRef.current.removeChild(renderer.domElement)
+        if (currentMount && renderer.domElement) {
+            currentMount.removeChild(renderer.domElement)
         }
         geometriesToDispose.forEach(geo => geo.dispose())
         material.dispose()

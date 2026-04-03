@@ -7,7 +7,8 @@ export function DocumentParticles3D() {
   const mountRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!mountRef.current) return
+    const currentMount = mountRef.current
+    if (!currentMount) return
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
@@ -20,10 +21,10 @@ export function DocumentParticles3D() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     
     // Clear any previous dom element from strict mode
-    while (mountRef.current.firstChild) {
-      mountRef.current.removeChild(mountRef.current.firstChild)
+    while (currentMount.firstChild) {
+      currentMount.removeChild(currentMount.firstChild)
     }
-    mountRef.current.appendChild(renderer.domElement)
+    currentMount.appendChild(renderer.domElement)
 
     const masterGroup = new THREE.Group()
     scene.add(masterGroup)
@@ -172,8 +173,8 @@ export function DocumentParticles3D() {
     return () => {
         window.removeEventListener('mousemove', handleMouseMove)
         cancelAnimationFrame(animationId)
-        if (mountRef.current && renderer.domElement) {
-            mountRef.current.removeChild(renderer.domElement)
+        if (currentMount && renderer.domElement) {
+            currentMount.removeChild(renderer.domElement)
         }
         
         geometry.dispose()
