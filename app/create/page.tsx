@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { gsap } from '@/lib/gsap-config'
 import { supabase } from '@/lib/supabase'
@@ -13,6 +13,18 @@ import Link from 'next/link'
 import { Linkedin } from 'lucide-react'
 
 export default function CreateResumePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#4a9eff] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <CreateResumeContent />
+    </Suspense>
+  )
+}
+
+function CreateResumeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const containerRef = useRef<HTMLDivElement>(null)
