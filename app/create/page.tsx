@@ -136,7 +136,6 @@ function CreateResumeContent() {
 
   return (
     <div className="min-h-screen bg-[#080808] flex flex-col">
-      <Navbar />
 
       <div ref={containerRef} className="flex-1 flex flex-col pt-4 opacity-0">
         {/* Header */}
