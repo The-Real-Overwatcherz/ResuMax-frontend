@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Mail, ArrowRight, Loader2, Hexagon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -16,6 +18,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
   const [mounted, setMounted] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
+  const router = useRouter()
 
   // Use this for Google Icon
   const GoogleIcon = (props: React.ComponentProps<"svg">) => (
@@ -55,13 +63,34 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
     setTimeout(() => onClose(), 300) // Match transition duration
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
+    setErrorMsg('')
+    try {
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName }
+          }
+        })
+        if (error) throw error
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (error) throw error
+      }
       handleClose()
-    }, 1500)
+      router.push('/dashboard')
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Authentication failed. Please check your credentials.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const modalContent = (
@@ -115,12 +144,19 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMsg && (
+                <div className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-2 text-center">
+                  {errorMsg}
+                </div>
+              )}
               {mode === 'signup' && (
                 <div className="space-y-1.5">
                   <label className="text-xs text-white/60 font-medium pl-1">Full Name</label>
                   <input 
                     type="text" 
                     placeholder="John Doe" 
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 focus:border-white/50 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none transition-all shadow-inner"
                     required
                   />
@@ -134,6 +170,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
                   <input 
                     type="email" 
                     placeholder="nam@resumax.ai" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 focus:border-white/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/20 outline-none transition-all shadow-inner"
                     required
                   />
@@ -145,6 +183,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
                 <input 
                   type="password" 
                   placeholder="••••••••" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 focus:border-white/50 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none transition-all shadow-inner"
                   required
                 />

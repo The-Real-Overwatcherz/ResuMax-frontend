@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { AuthModal } from '@/components/landing/AuthModal'
+import { User } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 const navLinks = [
   { label: 'Work', href: '/#pipeline' },
@@ -18,6 +20,22 @@ export function Navbar() {
   const pathname = usePathname()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
+  
+  const [user, setUser] = useState<any>(null)
+  const [loadingAuth, setLoadingAuth] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoadingAuth(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
 
   useEffect(() => {
@@ -61,22 +79,28 @@ export function Navbar() {
       </div>
 
       <div className="flex items-center gap-3 flex-shrink-0">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
-          className="h-9 px-4 text-xs tracking-wider uppercase text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-        >
-          Login
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }}
-          className="h-9 px-5 text-xs font-semibold tracking-wider uppercase border-white/50 bg-white/10 text-white hover:bg-white hover:text-black hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] rounded-full transition-all duration-300"
-        >
-          Sign Up
-        </Button>
+        {!loadingAuth && (
+          user ? (
+            <Link href="/dashboard">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-9 w-9 md:h-10 md:w-10 rounded-full border-white/20 bg-white/10 hover:bg-white hover:text-black hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-all duration-300"
+              >
+                <User className="h-4 w-4 md:h-5 md:w-5" />
+              </Button>
+            </Link>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
+              className="h-9 w-9 md:h-10 md:w-10 rounded-full border-white/20 bg-white/10 hover:bg-white hover:text-black hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-all duration-300"
+            >
+              <User className="h-4 w-4 md:h-5 md:w-5" />
+            </Button>
+          )
+        )}
       </div>
       
       <AuthModal 
