@@ -77,6 +77,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
           }
         })
         if (error) throw error
+        
+        handleClose()
+        router.push('/verify')
+        return
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
