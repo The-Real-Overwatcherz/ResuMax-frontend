@@ -1,13 +1,17 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import React, { useEffect, useState, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { 
   FileText, CheckCircle2, Loader2, Download, Menu, Plus, MessageSquare, Clock, Trash2,
   Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+// Prevent static prerendering
+export const runtime = 'edge'
 
 const STEP_LABELS = [
   "Queued",
@@ -75,7 +79,7 @@ export default function DashboardChat() {
     if (!user) return
     setLoadingHistory(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabase().auth.getSession()
       if (!session) return
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -99,7 +103,7 @@ export default function DashboardChat() {
 
   const loadHistoricalAnalysis = async (aid: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabase().auth.getSession()
       if (!session) return
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -135,7 +139,7 @@ export default function DashboardChat() {
     if (!confirm('Are you sure you want to delete this analysis?')) return
     
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabase().auth.getSession()
       if (!session) return
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -170,7 +174,7 @@ export default function DashboardChat() {
     let mounted = true
 
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabase().auth.getSession()
       if (!mounted) return
       
       if (!session) {
@@ -191,7 +195,7 @@ export default function DashboardChat() {
 
     checkSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         router.replace('/')
       } else if (session) {
@@ -220,7 +224,7 @@ export default function DashboardChat() {
       isPolling = true
 
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session } } = await getSupabase().auth.getSession()
         if (!session) return
 
         // 1. Fetch Status
@@ -297,7 +301,7 @@ export default function DashboardChat() {
     ])
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabase().auth.getSession()
       if (!session) throw new Error("Not authenticated.")
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -444,7 +448,7 @@ export default function DashboardChat() {
             </div>
           </div>
           <button 
-            onClick={async () => { await supabase.auth.signOut(); router.push('/'); }}
+            onClick={async () => { await getSupabase().auth.signOut(); router.push('/'); }}
             className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
           >
             <LogOut className="w-3 h-3" /> <span className="hidden sm:inline">Sign Out</span>
@@ -775,7 +779,7 @@ export default function DashboardChat() {
                       <Button
                         onClick={async () => {
                           try {
-                            const { data: { session } } = await supabase.auth.getSession()
+                            const { data: { session } } = await getSupabase().auth.getSession()
                             if (!session) return
 
                             // Prepare API call
