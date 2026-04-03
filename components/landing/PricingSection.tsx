@@ -45,7 +45,7 @@ export function PricingSection() {
             Deterministic Pricing.
           </h2>
           <p className="text-lg text-zinc-400 leading-relaxed max-w-md mx-auto md:mx-0">
-            Secure algorithmic dominance over every hiring pipeline. No hidden fees. Upgrade when you're ready.
+            Secure algorithmic dominance over every hiring pipeline. No hidden fees. Upgrade when you&apos;re ready.
           </p>
           
           <div className="mt-8 flex justify-center md:justify-start w-full">
