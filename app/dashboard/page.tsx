@@ -12,8 +12,7 @@ import {
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
-// Prevent static prerendering
-export const runtime = 'edge'
+
 
 const STEP_LABELS = [
   "Queued",
