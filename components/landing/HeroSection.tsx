@@ -1,17 +1,19 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap } from '@/lib/gsap-config'
 import { useLenis } from '@/components/providers/LenisProvider'
 import { Button } from '@/components/ui/button'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { ArrowRight } from 'lucide-react'
+import { AuthModal } from '@/components/landing/AuthModal'
 
 import { ResumePanel } from './ResumePanel'
 
 
 
 export function HeroSection() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const subtitleRef = useRef<HTMLParagraphElement>(null)
@@ -104,6 +106,7 @@ export function HeroSection() {
   }, [])
 
   return (
+    <>
     <section
       ref={sectionRef}
       id="hero"
@@ -127,6 +130,7 @@ export function HeroSection() {
           <div ref={ctaRef} className="mt-8 relative z-50">
             <ShimmerButton
               className="h-13 px-8 text-sm tracking-[0.12em] uppercase font-bold flex items-center justify-center gap-2 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all duration-500"
+              onClick={() => setIsAuthModalOpen(true)}
             >
               Start Analyzing
               <ArrowRight className="size-4" />
@@ -151,5 +155,12 @@ export function HeroSection() {
         <div className="w-1 h-1 rounded-full bg-white/50 animate-scroll-bounce" />
       </div>
     </section>
+
+    <AuthModal 
+      isOpen={isAuthModalOpen} 
+      onClose={() => setIsAuthModalOpen(false)} 
+      initialMode="signup" 
+    />
+    </>
   )
 }
