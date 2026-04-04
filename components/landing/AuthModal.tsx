@@ -97,6 +97,23 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true)
+    setErrorMsg('')
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      })
+      if (error) throw error
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Google authentication failed.')
+      setIsLoading(false)
+    }
+  }
+
   const modalContent = (
     <div className={`fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 transition-all duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       
@@ -134,7 +151,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
           <div className="space-y-4 w-full">
             <button 
               type="button"
-              className="w-full relative group overflow-hidden flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3.5 transition-all duration-300"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="w-full relative group overflow-hidden flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <GoogleIcon className="w-5 h-5" />

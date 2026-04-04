@@ -3,11 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { gsap } from '@/lib/gsap-config'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
-  Linkedin,
   Loader2,
   Copy,
   Check,
@@ -25,8 +23,19 @@ import {
   AlertCircle,
   XCircle,
   MinusCircle,
+  ArrowLeft,
+  MessageSquare,
+  Lightbulb,
+  Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+/* ── X icon (custom) ── */
+const XLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+)
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -50,7 +59,7 @@ function CollapsibleSection({
   icon: Icon,
   children,
   defaultOpen = false,
-  color = '#0A66C2',
+  color = '#fff',
 }: {
   title: string
   icon: React.ElementType
@@ -122,6 +131,8 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
 }
 
 interface AnalysisResult {
+  profile_name: string
+  handle: string
   overall_score: number
   overall_summary: string
   sections: {
@@ -132,16 +143,17 @@ interface AnalysisResult {
     suggestions: string[]
   }[]
   quick_wins: string[]
-  advanced_tips: {
+  bio_suggestions: string[]
+  content_strategy_tips: {
     tip: string
     why: string
     how: string
   }[]
-  headline_suggestions: string[]
-  keyword_recommendations: string[]
+  hashtag_recommendations: string[]
+  growth_tactics: string[]
 }
 
-export default function LinkedInOptimizerPage() {
+export default function XAnalyzerPage() {
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -155,7 +167,7 @@ export default function LinkedInOptimizerPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    getSupabase().auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         router.push('/login')
       } else {
@@ -200,7 +212,7 @@ export default function LinkedInOptimizerPage() {
     if (!selectedImage) return
     setLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await getSupabase().auth.getSession()
       if (!session) return
 
       const formData = new FormData()
@@ -210,7 +222,7 @@ export default function LinkedInOptimizerPage() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const res = await fetch(`${apiUrl}/api/linkedin-optimizer/analyze`, {
+      const res = await fetch(`${apiUrl}/api/x-analyzer/analyze`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -222,7 +234,7 @@ export default function LinkedInOptimizerPage() {
       const data = await res.json()
       setResult(data)
     } catch (err) {
-      console.error('LinkedIn analysis failed:', err)
+      console.error('X analysis failed:', err)
       alert('Analysis failed. Please try again.')
     } finally {
       setLoading(false)
@@ -231,31 +243,28 @@ export default function LinkedInOptimizerPage() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-[#080808] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#0A66C2] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#080808]">
+    <div className="min-h-screen bg-[#050505]">
       <div ref={containerRef} className="max-w-4xl mx-auto px-4 sm:px-6 py-8 opacity-0">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-white/40 hover:text-white text-sm font-mono transition-colors"
-            >
-              Dashboard
+            <Link href="/dashboard" className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+              <ArrowLeft className="w-5 h-5 text-white" />
             </Link>
-            <span className="text-white/20">/</span>
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-[#0A66C2]/10">
-                <Linkedin className="w-4 h-4 text-[#0A66C2]" />
+              <div className="p-1.5 rounded-lg bg-white/10">
+                <XLogo className="w-4 h-4 text-white" />
               </div>
               <h1 className="text-lg font-semibold text-white tracking-tight">
-                LinkedIn Optimizer
+                X Profile Analyzer
               </h1>
             </div>
           </div>
@@ -276,16 +285,16 @@ export default function LinkedInOptimizerPage() {
           )}
         </div>
 
-        {/* Upload Area — shown when no result */}
+        {/* Upload Area */}
         {!result && (
           <div className="space-y-6">
             <div className="rounded-[1.5rem] bg-white/[0.02] border border-white/[0.06] p-6 sm:p-8 space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-white mb-1">
-                  Upload your LinkedIn Screenshot
+                  Upload your X Profile Screenshot
                 </h2>
                 <p className="text-sm text-white/40">
-                  Take a screenshot of your LinkedIn profile page and drop it here. Our AI will analyze every element and give you specific suggestions.
+                  Take a screenshot of your X/Twitter profile and drop it here. Shruti will analyze every element and give you specific suggestions to grow your presence.
                 </p>
               </div>
 
@@ -295,10 +304,10 @@ export default function LinkedInOptimizerPage() {
                   onDrop={handleDrop}
                   onDragOver={(e) => e.preventDefault()}
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-white/10 hover:border-[#0A66C2]/40 rounded-2xl p-12 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all hover:bg-white/[0.01] group"
+                  className="border-2 border-dashed border-white/10 hover:border-white/30 rounded-2xl p-12 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all hover:bg-white/[0.01] group"
                 >
-                  <div className="p-4 rounded-2xl bg-[#0A66C2]/10 group-hover:bg-[#0A66C2]/20 transition-colors">
-                    <ImageIcon className="w-10 h-10 text-[#0A66C2]/60 group-hover:text-[#0A66C2] transition-colors" />
+                  <div className="p-4 rounded-2xl bg-white/5 group-hover:bg-white/10 transition-colors">
+                    <ImageIcon className="w-10 h-10 text-white/30 group-hover:text-white/60 transition-colors" />
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-white/70 font-medium">
@@ -313,7 +322,7 @@ export default function LinkedInOptimizerPage() {
                 <div className="relative rounded-2xl overflow-hidden border border-white/10">
                   <img
                     src={imagePreview}
-                    alt="LinkedIn profile screenshot"
+                    alt="X profile screenshot"
                     className="w-full max-h-[500px] object-contain bg-black/50"
                   />
                   <button
@@ -345,15 +354,15 @@ export default function LinkedInOptimizerPage() {
                   type="text"
                   value={additionalContext}
                   onChange={(e) => setAdditionalContext(e.target.value)}
-                  placeholder="e.g., I'm targeting product management roles at FAANG companies..."
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#0A66C2]/50 focus:ring-1 focus:ring-[#0A66C2]/50 transition-all font-mono"
+                  placeholder="e.g., I'm building a developer audience and want to grow to 10K followers..."
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all font-mono"
                 />
               </div>
 
               <Button
                 onClick={handleAnalyze}
                 disabled={loading || !selectedImage}
-                className="w-full h-12 rounded-xl bg-[#0A66C2] hover:bg-[#0A66C2]/80 text-white font-semibold shadow-[0_0_20px_rgba(10,102,194,0.2)] hover:shadow-[0_0_30px_rgba(10,102,194,0.4)] text-[15px] disabled:opacity-50"
+                className="w-full h-12 rounded-xl bg-white hover:bg-gray-200 text-black font-semibold shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] text-[15px] disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -363,19 +372,19 @@ export default function LinkedInOptimizerPage() {
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Analyze My Profile
+                    Analyze My X Profile
                   </>
                 )}
               </Button>
             </div>
 
-            {/* How to take screenshot tips */}
+            {/* Tips */}
             <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] p-5">
               <p className="text-xs font-mono text-white/40 uppercase tracking-wider mb-3">How to get the best analysis</p>
               <div className="space-y-2 text-xs text-white/50">
-                <p>1. Go to your LinkedIn profile page</p>
-                <p>2. Take a full-page screenshot (or multiple screenshots of different sections)</p>
-                <p>3. Make sure your headline, about section, and experience are visible</p>
+                <p>1. Go to your X/Twitter profile page</p>
+                <p>2. Take a full-page screenshot including your bio, banner, and a few tweets</p>
+                <p>3. Make sure your profile stats (followers, following) are visible</p>
                 <p>4. Upload and let Shruti analyze it</p>
               </div>
             </div>
@@ -390,14 +399,19 @@ export default function LinkedInOptimizerPage() {
               <div className="flex items-center gap-6">
                 <ScoreRing score={result.overall_score} />
                 <div className="flex-1 space-y-2">
-                  <h3 className="text-lg font-semibold text-white">Profile Analysis</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white">{result.profile_name}</h3>
+                    {result.handle && (
+                      <span className="text-sm text-white/40 font-mono">{result.handle}</span>
+                    )}
+                  </div>
                   <p className="text-sm text-white/60 leading-relaxed">{result.overall_summary}</p>
                 </div>
               </div>
             </div>
 
             {/* Section Breakdown */}
-            <CollapsibleSection title="Section-by-Section Breakdown" icon={Target} defaultOpen color="#0A66C2">
+            <CollapsibleSection title="Section-by-Section Breakdown" icon={Target} defaultOpen color="#fff">
               <div className="space-y-3">
                 {result.sections.map((section, i) => (
                   <div key={i} className="p-4 rounded-xl bg-black/30 border border-white/5 space-y-3">
@@ -418,7 +432,7 @@ export default function LinkedInOptimizerPage() {
                     <div className="space-y-1.5">
                       {section.suggestions.map((s, j) => (
                         <div key={j} className="flex items-start gap-2 text-xs text-white/70">
-                          <span className="text-[#0A66C2] mt-0.5">→</span>
+                          <span className="text-white/50 mt-0.5">→</span>
                           <span>{s}</span>
                         </div>
                       ))}
@@ -440,41 +454,41 @@ export default function LinkedInOptimizerPage() {
               </div>
             </CollapsibleSection>
 
-            {/* Headline Suggestions */}
-            <CollapsibleSection title="Headline Suggestions" icon={Linkedin} color="#0A66C2">
+            {/* Bio Suggestions */}
+            <CollapsibleSection title="Bio Suggestions" icon={MessageSquare} color="#fff">
               <div className="space-y-2">
-                {result.headline_suggestions.map((h, i) => (
+                {result.bio_suggestions.map((bio, i) => (
                   <div
                     key={i}
                     className="flex items-center justify-between gap-3 p-3 rounded-xl bg-black/30 border border-white/5"
                   >
-                    <p className="text-sm text-white/90 flex-1">{h}</p>
-                    <CopyButton text={h} />
+                    <p className="text-sm text-white/90 flex-1">{bio}</p>
+                    <CopyButton text={bio} />
                   </div>
                 ))}
               </div>
             </CollapsibleSection>
 
-            {/* Keywords */}
-            <CollapsibleSection title="Recommended Keywords" icon={Hash} color="#06b6d4">
+            {/* Hashtag Recommendations */}
+            <CollapsibleSection title="Recommended Hashtags" icon={Hash} color="#06b6d4">
               <div className="flex flex-wrap gap-1.5">
-                {result.keyword_recommendations.map((kw, i) => (
+                {result.hashtag_recommendations.map((tag, i) => (
                   <span
                     key={i}
                     className="px-2.5 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs rounded-lg font-mono cursor-pointer hover:bg-cyan-500/20 transition-colors"
-                    onClick={() => navigator.clipboard.writeText(kw)}
+                    onClick={() => navigator.clipboard.writeText(`#${tag}`)}
                   >
-                    {kw}
+                    #{tag}
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-white/40 mt-2">Click any keyword to copy. Add these to your headline, about section, and experience descriptions.</p>
+              <p className="text-xs text-white/40 mt-2">Click any hashtag to copy. Use these in your tweets and bio.</p>
             </CollapsibleSection>
 
-            {/* Advanced Tips */}
-            <CollapsibleSection title="Advanced Growth Tips" icon={TrendingUp} color="#a855f7">
+            {/* Content Strategy Tips */}
+            <CollapsibleSection title="Content Strategy Tips" icon={TrendingUp} color="#a855f7">
               <div className="space-y-3">
-                {result.advanced_tips.map((tip, i) => (
+                {result.content_strategy_tips.map((tip, i) => (
                   <div
                     key={i}
                     className="p-4 rounded-xl bg-black/30 border border-white/5 space-y-2"
@@ -490,13 +504,25 @@ export default function LinkedInOptimizerPage() {
               </div>
             </CollapsibleSection>
 
+            {/* Growth Tactics */}
+            <CollapsibleSection title="Growth Tactics" icon={Users} color="#f59e0b">
+              <div className="space-y-2">
+                {result.growth_tactics.map((tactic, i) => (
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                    <span className="text-amber-400 font-bold text-sm mt-0.5">{i + 1}</span>
+                    <p className="text-sm text-white/80">{tactic}</p>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+
             {/* Screenshot Preview */}
             {imagePreview && (
               <CollapsibleSection title="Your Screenshot" icon={ImageIcon} color="#888">
                 <div className="rounded-xl overflow-hidden border border-white/5">
                   <img
                     src={imagePreview}
-                    alt="Analyzed LinkedIn profile"
+                    alt="Analyzed X profile"
                     className="w-full max-h-[400px] object-contain bg-black/50"
                   />
                 </div>

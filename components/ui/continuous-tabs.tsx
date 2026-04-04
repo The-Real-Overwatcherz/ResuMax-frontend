@@ -12,6 +12,7 @@ interface TabItem {
 interface ContinuousTabsProps {
     tabs?: TabItem[];
     defaultActiveId?: string;
+    activeId?: string;
     onChange?: (id: string) => void;
 }
 
@@ -26,14 +27,21 @@ const DEFAULT_TABS: TabItem[] = [
 export const ContinuousTabs: FC<ContinuousTabsProps> = ({
     tabs = DEFAULT_TABS,
     defaultActiveId = "home",
+    activeId,
     onChange,
 }) => {
-    const [active, setActive] = useState<string>(defaultActiveId);
+    const [active, setActive] = useState<string>(activeId || defaultActiveId);
     const [isMounted, setIsMounted] = useState<boolean>(false);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (activeId !== undefined) {
+            setActive(activeId);
+        }
+    }, [activeId]);
 
     const handleChange = (id: string) => {
         setActive(id);

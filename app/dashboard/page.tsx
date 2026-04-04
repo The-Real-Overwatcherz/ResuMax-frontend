@@ -1,12 +1,13 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import {
   FileText, CheckCircle2, Loader2, Download, Menu, Plus, MessageSquare, Clock, Trash2,
-  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine, Linkedin, Mic
+  Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine, Linkedin, Mic,
+  Volume2, VolumeX, Square, MicOff, Github, History, Sparkles, Twitter
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -25,7 +26,7 @@ const STEP_LABELS = [
   "Optimization complete"
 ]
 
-type MessageType = 'welcome' | 'user_submission' | 'shruti_tracking' | 'shruti_result'
+type MessageType = 'welcome' | 'user_submission' | 'shruti_tracking' | 'shruti_result' | 'voice_user' | 'voice_assistant'
 
 interface Message {
   id: string
@@ -35,7 +36,7 @@ interface Message {
   jd?: string
   file?: { name: string, size: number }
   messageText?: string
-  
+
   // For Tracking & Result
   analysisId?: string
   status?: string | null
@@ -70,6 +71,28 @@ export default function DashboardChat() {
   const [jobDescription, setJobDescription] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Mode: 'analysis' (upload resume + JD) or 'chat' (talk to Shruti)
+  const [chatMode, setChatMode] = useState<'analysis' | 'chat'>('analysis')
+
+  // Voice/Chat State
+  const [resumeContext, setResumeContext] = useState('')
+  const [resumeFileName, setResumeFileName] = useState('')
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [isProcessingChat, setIsProcessingChat] = useState(false)
+  const [ttsEnabled, setTtsEnabled] = useState(true)
+  const [transcript, setTranscript] = useState('')
+
+  // Refs for voice
+  const recognitionRef = useRef<any>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const resumeContextRef = useRef('')
+  const messagesRef = useRef<Message[]>([])
+
+  // Keep refs in sync
+  useEffect(() => { resumeContextRef.current = resumeContext }, [resumeContext])
+  useEffect(() => { messagesRef.current = messages }, [messages])
 
   // History State
   const [history, setHistory] = useState<any[]>([])
@@ -113,9 +136,9 @@ export default function DashboardChat() {
       })
       if (!res.ok) throw new Error("Failed to load past analysis")
       const analysisData = await res.json()
-      
+
       const sessionName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
-      
+
       setMessages([
         {
           id: Date.now().toString(),
@@ -125,8 +148,7 @@ export default function DashboardChat() {
           userName: sessionName
         }
       ])
-      
-      // Close sidebar on mobile
+
       if (window.innerWidth < 768) setSidebarOpen(false)
     } catch(e) {
       console.error("Error loading historical analysis", e)
@@ -135,10 +157,9 @@ export default function DashboardChat() {
   }
 
   const deleteAnalysis = async (aid: string, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent loading the analysis when clicking delete
-    
+    e.stopPropagation()
     if (!confirm('Are you sure you want to delete this analysis?')) return
-    
+
     try {
       const { data: { session } } = await getSupabase().auth.getSession()
       if (!session) return
@@ -148,21 +169,16 @@ export default function DashboardChat() {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       })
-      
+
       if (!res.ok) throw new Error("Failed to delete analysis")
-      
-      // Remove from state
       setHistory(prev => prev.filter(h => h.id !== aid))
-      
-      // If the deleted items is currently active in chat, we could clear it, but let's just let it be or clear everything
       setMessages(prev => prev.filter(m => m.analysisId !== aid))
-      
     } catch(e) {
       console.error("Error deleting analysis", e)
       alert("Failed to delete analysis")
     }
   }
-  
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -177,7 +193,7 @@ export default function DashboardChat() {
     const checkSession = async () => {
       const { data: { session } } = await getSupabase().auth.getSession()
       if (!mounted) return
-      
+
       if (!session) {
         router.replace('/')
       } else {
@@ -187,7 +203,7 @@ export default function DashboardChat() {
           {
             id: '1',
             type: 'welcome',
-            messageText: `Welcome back, ${name.split('@')[0]}. I am Shruti, your AI Advisor. Please upload your resume document and paste the target job description below to begin the analysis pipeline.`
+            messageText: `Welcome back, ${name.split('@')[0]}. I am Shruti, your AI Advisor. Upload your resume and paste a job description to analyze — or switch to Chat mode to talk with me about your career.`
           }
         ])
       }
@@ -228,22 +244,23 @@ export default function DashboardChat() {
         const { data: { session } } = await getSupabase().auth.getSession()
         if (!session) return
 
-        // 1. Fetch Status
         const resStatus = await fetch(`${apiUrl}/api/analysis/${aid}/status`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         })
-        if (!resStatus.ok) throw new Error("Status API failed")
+        if (!resStatus.ok) {
+          // Mark as failed so polling stops
+          setMessages(prev => prev.map(m => m.id === activeTrackingMsg.id ? { ...m, status: 'failed' } : m))
+          return
+        }
         const dataStatus = await resStatus.json()
 
-        // 2 & 3. Combine State Updates to prevent duplicates from overlapping polls
         if (dataStatus.status === 'completed') {
           const resFull = await fetch(`${apiUrl}/api/analysis/${aid}`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           })
           const analysisData = await resFull.json()
-          
+
           setMessages(prev => {
-            // Guard against duplicate results
             if (prev.some(m => m.type === 'shruti_result' && m.analysisId === aid)) {
               return prev
             }
@@ -274,9 +291,192 @@ export default function DashboardChat() {
     return () => clearInterval(interval)
   }, [messages, user])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
+  // ─── Speech Recognition Setup ───
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) return
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = 'en-US'
+
+    recognition.onresult = (event: any) => {
+      let final = ''
+      let interim = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        if (result.isFinal) {
+          final += result[0].transcript
+        } else {
+          interim += result[0].transcript
+        }
+      }
+      setTranscript(interim || final)
+      if (final) {
+        setTranscript('')
+        sendChatMessage(final.trim())
+        recognition.stop()
+        setIsListening(false)
+      }
+    }
+
+    recognition.onerror = () => setIsListening(false)
+    recognition.onend = () => setIsListening(false)
+    recognitionRef.current = recognition
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── TTS Playback ───
+  const playAudio = useCallback((audioBase64: string) => {
+    if (!ttsEnabled) return
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+    const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`)
+    audioRef.current = audio
+    audio.onplay = () => setIsSpeaking(true)
+    audio.onended = () => setIsSpeaking(false)
+    audio.onerror = () => setIsSpeaking(false)
+    audio.play().catch(() => setIsSpeaking(false))
+  }, [ttsEnabled])
+
+  const stopSpeaking = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+    setIsSpeaking(false)
+  }
+
+  // ─── Send Chat Message (voice/chat mode) ───
+  const sendChatMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return
+
+    const initial = (user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      type: 'voice_user',
+      messageText: text.trim(),
+      userInitial: initial,
+    }
+
+    setMessages(prev => [...prev, userMsg])
+    setIsProcessingChat(true)
+
+    try {
+      const { data: { session } } = await getSupabase().auth.getSession()
+      if (!session) return
+
+      const currentResumeContext = resumeContextRef.current
+      const currentMessages = messagesRef.current
+
+      // Build conversation history from voice messages only
+      const voiceHistory = currentMessages
+        .filter(m => m.type === 'voice_user' || m.type === 'voice_assistant')
+        .concat(userMsg)
+        .slice(-10)
+        .map(m => ({
+          role: m.type === 'voice_user' ? 'user' : 'assistant',
+          content: m.messageText || ''
+        }))
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const res = await fetch(`${apiUrl}/api/voice-chat/ask`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: text.trim(),
+          resume_context: currentResumeContext,
+          conversation_history: voiceHistory,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Failed to get response')
+      const data = await res.json()
+
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'voice_assistant',
+        messageText: data.answer,
+      }
+
+      setMessages(prev => [...prev, aiMsg])
+      if (data.audio) {
+        playAudio(data.audio)
+      }
+    } catch (err) {
+      console.error('Voice chat error:', err)
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        type: 'voice_assistant',
+        messageText: "Sorry, I couldn't process that. Could you try again?",
+      }])
+    } finally {
+      setIsProcessingChat(false)
+    }
+  }, [playAudio, user])
+
+  // ─── File Upload Handler (parse for voice context) ───
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return
+    const selectedFile = e.target.files[0]
+    setFile(selectedFile)
+    setResumeFileName(selectedFile.name)
+
+    // Parse file for voice chat context
+    if (selectedFile.type === 'text/plain') {
+      const text = await selectedFile.text()
+      setResumeContext(text.slice(0, 5000))
+    } else {
+      // PDF/DOCX — send to backend to parse
+      try {
+        const { data: { session } } = await getSupabase().auth.getSession()
+        if (!session) return
+
+        const formData = new FormData()
+        formData.append('resume', selectedFile)
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const res = await fetch(`${apiUrl}/api/voice-chat/parse-resume`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: formData,
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data.text) {
+            setResumeContext(data.text.slice(0, 5000))
+          }
+        }
+      } catch (err) {
+        console.error('File parse error:', err)
+      }
+    }
+  }
+
+  // ─── Mic Toggle ───
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert('Speech recognition is not supported in your browser. Try Chrome.')
+      return
+    }
+    if (isListening) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+      setTranscript('')
+    } else {
+      stopSpeaking()
+      setTranscript('')
+      setChatMode('chat')
+      recognitionRef.current.start()
+      setIsListening(true)
     }
   }
 
@@ -285,10 +485,9 @@ export default function DashboardChat() {
     if (!jobDescription.trim()) return alert('Please enter a job description.')
 
     setIsSubmitting(true)
-    
-    // Add user message
+
     const initial = (user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()
-    
+
     const userMsgId = Date.now().toString()
     setMessages(prev => [
       ...prev,
@@ -323,7 +522,6 @@ export default function DashboardChat() {
         throw new Error(data.detail || 'Failed to start analysis')
       }
 
-      // Append Shruti tracking msg
       setMessages(prev => [
         ...prev,
         {
@@ -335,16 +533,26 @@ export default function DashboardChat() {
         }
       ])
 
-      // Clear input
       setFile(null)
       setJobDescription('')
-      
+      setResumeFileName('')
+
     } catch (err: any) {
       alert(err.message || 'An error occurred during submission.')
-      // Remove the user message if it failed entirely to prevent a stuck UI
       setMessages(prev => prev.filter(m => m.id !== userMsgId))
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleSend = () => {
+    if (chatMode === 'analysis') {
+      startAnalysis()
+    } else {
+      if (jobDescription.trim()) {
+        sendChatMessage(jobDescription.trim())
+        setJobDescription('')
+      }
     }
   }
 
@@ -358,7 +566,7 @@ export default function DashboardChat() {
 
   return (
     <div className="flex h-[100dvh] bg-[#050505] text-white w-full overflow-hidden">
-      
+
       {/* Sidebar */}
       <aside className={`flex-shrink-0 flex flex-col transition-all duration-300 border-r border-white/5 bg-[#0a0a0a] z-40
         ${sidebarOpen ? 'w-64' : 'w-0 opacity-0 overflow-hidden'}
@@ -373,44 +581,26 @@ export default function DashboardChat() {
             <X className="w-4 h-4" />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {/* New Chat Button */}
-          <button 
+          <button
             onClick={() => {
               const name = user?.user_metadata?.full_name || user?.email || 'Guest'
               setMessages([{
                 id: Date.now().toString(),
                 type: 'welcome',
-                messageText: `Welcome back, ${name.split('@')[0]}. I am Shruti, your AI Advisor. Please upload your resume document and paste the target job description below to begin the analysis pipeline.`
+                messageText: `Welcome back, ${name.split('@')[0]}. I am Shruti, your AI Advisor. Upload your resume and paste a job description to analyze — or switch to Chat mode to talk with me about your career.`
               }])
+              setFile(null)
+              setResumeContext('')
+              setResumeFileName('')
+              setChatMode('analysis')
               if (window.innerWidth < 768) setSidebarOpen(false)
             }}
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-xs text-white/90"
           >
             <Plus className="w-4 h-4" /> New Analysis
           </button>
-
-          <Link
-            href="/create"
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[#4a9eff]/20 hover:bg-[#4a9eff]/10 transition-colors text-xs text-[#4a9eff]"
-          >
-            <PenLine className="w-4 h-4" /> Create Resume
-          </Link>
-
-          <Link
-            href="/linkedin-optimizer"
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[#0A66C2]/20 hover:bg-[#0A66C2]/10 transition-colors text-xs text-[#0A66C2]"
-          >
-            <Linkedin className="w-4 h-4" /> LinkedIn Optimizer
-          </Link>
-
-          <Link
-            href="/voice-chat"
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors text-xs text-emerald-400"
-          >
-            <Mic className="w-4 h-4" /> Voice Chat
-          </Link>
 
           <div className="pt-4 space-y-1">
             <p className="px-3 text-[10px] text-white/40 font-mono mb-2 uppercase">Past Analyses</p>
@@ -435,7 +625,7 @@ export default function DashboardChat() {
                       {h.ats_score > 0 && <span className="text-[10px] text-blue-400">Score: {h.ats_score}</span>}
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={(e) => deleteAnalysis(h.id, e)}
                     className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 rounded-md transition-all text-white/30 hover:text-red-400"
                     title="Delete Chat"
@@ -451,11 +641,11 @@ export default function DashboardChat() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
-        
+
         {/* Top Header */}
         <header className="w-full flex flex-shrink-0 justify-between items-center px-4 sm:px-6 py-4 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 -ml-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
             >
@@ -469,19 +659,34 @@ export default function DashboardChat() {
               </p>
             </div>
           </div>
-          <button 
-            onClick={async () => { await getSupabase().auth.signOut(); router.push('/'); }}
-            className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-          >
-            <LogOut className="w-3 h-3" /> <span className="hidden sm:inline">Sign Out</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* TTS Toggle */}
+            <button
+              onClick={() => {
+                if (isSpeaking) stopSpeaking()
+                setTtsEnabled(!ttsEnabled)
+              }}
+              className={`p-2 rounded-lg transition-colors ${
+                ttsEnabled ? 'bg-[#4a9eff]/10 text-[#4a9eff]' : 'bg-white/5 text-white/30'
+              }`}
+              title={ttsEnabled ? 'Mute voice' : 'Enable voice'}
+            >
+              {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={async () => { await getSupabase().auth.signOut(); router.push('/'); }}
+              className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+            >
+              <LogOut className="w-3 h-3" /> <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          </div>
         </header>
 
         {/* Chat Area */}
-        <div data-lenis-prevent className="flex-1 min-h-0 h-0 w-full overflow-y-auto scroll-smooth bg-transparent">
-          <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-40 space-y-8">
+        <div data-lenis-prevent className="flex-1 min-h-0 w-full overflow-y-auto scroll-smooth bg-transparent">
+          <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-52 space-y-8">
           {messages.map((msg) => {
-          
+
           // WELCOME MESSAGE
           if (msg.type === 'welcome') {
             return (
@@ -496,7 +701,7 @@ export default function DashboardChat() {
             )
           }
 
-          // USER SUBMISSION
+          // USER SUBMISSION (analysis mode)
           if (msg.type === 'user_submission') {
             return (
               <div key={msg.id} className="flex gap-4 items-start flex-row-reverse w-full animate-in fade-in slide-in-from-bottom-2">
@@ -512,10 +717,34 @@ export default function DashboardChat() {
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-medium text-white truncate max-w-[150px]">{msg.file.name}</p>
-                        <p className="text-[10px] text-white/40">{(msg.file.size / 1024 / 1024).toFixed(2)} MB PDF Document</p>
+                        <p className="text-[10px] text-white/40">{(msg.file.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )
+          }
+
+          // VOICE USER MESSAGE (chat mode)
+          if (msg.type === 'voice_user') {
+            return (
+              <div key={msg.id} className="flex gap-4 items-start flex-row-reverse w-full animate-in fade-in slide-in-from-bottom-2">
+                <UserAvatar initial={msg.userInitial || 'U'} />
+                <div className="max-w-[80%] bg-[#4a9eff]/10 border border-[#4a9eff]/20 rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white/90">
+                  {msg.messageText}
+                </div>
+              </div>
+            )
+          }
+
+          // VOICE ASSISTANT MESSAGE (chat mode)
+          if (msg.type === 'voice_assistant') {
+            return (
+              <div key={msg.id} className="flex gap-4 items-start w-full animate-in fade-in slide-in-from-bottom-2">
+                <ShrutiAvatar />
+                <div className="max-w-[80%] bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/80 leading-relaxed">
+                  {msg.messageText}
                 </div>
               </div>
             )
@@ -534,7 +763,7 @@ export default function DashboardChat() {
                         const isCompleted = (msg.currentStep ?? 0) > idx || msg.status === 'completed'
                         const isActive = msg.currentStep === idx && msg.status !== 'completed' && msg.status !== 'failed'
                         const isPending = (msg.currentStep ?? 0) < idx && msg.status !== 'completed'
-                        
+
                         return (
                           <div key={idx} className={`flex items-start gap-4 transition-all duration-300 ${isPending ? 'opacity-30' : 'opacity-100'}`}>
                             <div className="relative">
@@ -577,7 +806,6 @@ export default function DashboardChat() {
             const densityAnalysis = data.density_analysis || {}
             const processingMs = data.processing_time_ms || 0
 
-            // Combine missing keywords from both keyword_analysis and skill_analysis
             const missingCritical = skillAnalysis.missing_critical || []
             const missingOptional = skillAnalysis.missing_optional || []
             const exactMatches = skillAnalysis.exact_matches || []
@@ -592,11 +820,9 @@ export default function DashboardChat() {
                   <p className="text-sm leading-relaxed text-white">
                     Hey <span className="font-semibold text-blue-400">{msg.userName}</span>, I have analyzed your resume. Here is the breakdown:
                   </p>
-                  
-                  {/* ─── Black Box Report ─── */}
+
                   <div className="bg-black border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-                    
-                    {/* Report Header */}
+
                     <div className="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
                       <div className="flex gap-2 items-center">
                         <Hexagon className="w-4 h-4 text-blue-400" />
@@ -604,10 +830,10 @@ export default function DashboardChat() {
                       </div>
                       <span className="text-[10px] text-white/30 font-mono">{(processingMs / 1000).toFixed(1)}s</span>
                     </div>
-                    
+
                     <div className="p-6 space-y-6">
-                      
-                      {/* ─── ATS Score Ring ─── */}
+
+                      {/* ATS Score Ring */}
                       <div className="flex items-center gap-6">
                         <div className="w-20 h-20 rounded-full flex flex-col items-center justify-center relative flex-shrink-0">
                           <svg viewBox="0 0 80 80" className="absolute inset-0 w-full h-full -rotate-90">
@@ -643,7 +869,7 @@ export default function DashboardChat() {
 
                       <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                      {/* ─── Strengths ─── */}
+                      {/* Strengths */}
                       {deepAnalysis.strengths && deepAnalysis.strengths.length > 0 && (
                         <div>
                           <h4 className="text-xs font-medium text-green-400/80 mb-3 flex items-center gap-2">
@@ -660,7 +886,7 @@ export default function DashboardChat() {
                         </div>
                       )}
 
-                      {/* ─── Weaknesses ─── */}
+                      {/* Weaknesses */}
                       {deepAnalysis.weaknesses && deepAnalysis.weaknesses.length > 0 && (
                         <div>
                           <h4 className="text-xs font-medium text-red-400/80 mb-3 flex items-center gap-2">
@@ -681,7 +907,7 @@ export default function DashboardChat() {
                         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                       )}
 
-                      {/* ─── Skill Matches ─── */}
+                      {/* Skill Matches */}
                       {exactMatches.length > 0 && (
                         <div>
                           <h4 className="text-xs font-medium text-white/70 mb-3">Matched Skills</h4>
@@ -693,7 +919,7 @@ export default function DashboardChat() {
                         </div>
                       )}
 
-                      {/* ─── Missing Critical Skills ─── */}
+                      {/* Missing Critical Skills */}
                       {missingCritical.length > 0 && (
                         <div>
                           <h4 className="text-xs font-medium text-red-400/80 mb-3 flex items-center gap-2">
@@ -707,7 +933,7 @@ export default function DashboardChat() {
                         </div>
                       )}
 
-                      {/* ─── Implicit Skills ─── */}
+                      {/* Implicit Skills */}
                       {implicitSkills.length > 0 && (
                         <div>
                           <h4 className="text-xs font-medium text-blue-400/80 mb-3">Implicit Skills Detected</h4>
@@ -726,7 +952,7 @@ export default function DashboardChat() {
                         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                       )}
 
-                      {/* ─── STAR Bullet Rewrites ─── */}
+                      {/* STAR Bullet Rewrites */}
                       {bulletRewrites.length > 0 && (
                         <div>
                           <h4 className="text-xs font-medium text-white/70 mb-3 flex items-center gap-2">
@@ -757,7 +983,7 @@ export default function DashboardChat() {
                         </div>
                       )}
 
-                      {/* ─── Gap Analysis ─── */}
+                      {/* Gap Analysis */}
                       {deepAnalysis.gap_analysis && deepAnalysis.gap_analysis.length > 0 && (
                         <>
                           <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -776,7 +1002,7 @@ export default function DashboardChat() {
                         </>
                       )}
 
-                      {/* ─── Recommendations ─── */}
+                      {/* Recommendations */}
                       {skillRecommendations.length > 0 && (
                         <>
                           <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -796,7 +1022,7 @@ export default function DashboardChat() {
 
                     </div>
 
-                    {/* ─── Card Footer / Actions ─── */}
+                    {/* Card Footer / Actions */}
                     <div className="bg-[#050505] p-4 border-t border-white/5 flex justify-end">
                       <Button
                         onClick={async () => {
@@ -804,16 +1030,13 @@ export default function DashboardChat() {
                             const { data: { session } } = await getSupabase().auth.getSession()
                             if (!session) return
 
-                            // Prepare API call
                             const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/analysis/${data.id}/download`
-                            
-                            // Fetch raw bytes
+
                             const response = await fetch(url, {
                               headers: { 'Authorization': `Bearer ${session.access_token}` }
                             })
                             if (!response.ok) throw new Error("Failed to download")
 
-                            // Convert to Blob and download
                             const blob = await response.blob()
                             const downloadUrl = window.URL.createObjectURL(blob)
                             const a = document.createElement("a")
@@ -843,6 +1066,31 @@ export default function DashboardChat() {
 
           return null
         })}
+
+        {/* Processing indicator for chat mode */}
+        {isProcessingChat && (
+          <div className="flex gap-4 items-start w-full animate-in fade-in slide-in-from-bottom-2">
+            <ShrutiAvatar />
+            <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white/[0.04] border border-white/[0.06]">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Live transcript */}
+        {transcript && (
+          <div className="flex gap-4 items-start flex-row-reverse w-full animate-in fade-in">
+            <UserAvatar initial={(user?.user_metadata?.full_name?.charAt(0) || 'U').toUpperCase()} />
+            <div className="max-w-[80%] px-4 py-3 rounded-2xl rounded-tr-sm bg-[#4a9eff]/5 border border-[#4a9eff]/10 text-white/50 text-sm italic">
+              {transcript}...
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
         </div>
       </div>
@@ -850,9 +1098,20 @@ export default function DashboardChat() {
       {/* Bottom Pinned Input Bar */}
       <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pt-12 pb-6 px-4 z-20 pointer-events-none">
         <div className="max-w-3xl mx-auto pointer-events-auto">
-          
-          {/* File pill if selected */}
-          {file && (
+
+          {/* Resume loaded indicator */}
+          {resumeContext && (
+            <div className="mb-3 ml-2 flex items-center gap-2 bg-green-500/5 border border-green-500/10 w-fit px-3 py-1.5 rounded-full animate-in fade-in slide-in-from-bottom-2 shadow-lg backdrop-blur-md">
+              <FileText className="w-3.5 h-3.5 text-green-400" />
+              <span className="text-xs text-green-400/80 font-mono truncate max-w-[150px]">{resumeFileName} loaded</span>
+              <button onClick={() => { setResumeContext(''); setResumeFileName(''); setFile(null) }} className="ml-1 p-0.5 rounded-full hover:bg-white/20 transition-colors">
+                <X className="w-3 h-3 text-green-400/40" />
+              </button>
+            </div>
+          )}
+
+          {/* File pill (for analysis mode, when file selected but not yet parsed/shown as resume) */}
+          {file && !resumeContext && (
             <div className="mb-3 ml-2 flex items-center gap-2 bg-white/10 border border-white/10 w-fit px-3 py-1.5 rounded-full animate-in fade-in slide-in-from-bottom-2 shadow-lg backdrop-blur-md">
               <FileText className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-xs text-white max-w-[100px] truncate">{file.name}</span>
@@ -862,26 +1121,75 @@ export default function DashboardChat() {
             </div>
           )}
 
+          {/* Mode Toggle + Nav */}
+          <div className="flex items-center gap-1 mb-3 ml-2 overflow-x-auto scrollbar-hide whitespace-nowrap pb-1">
+            <button
+              onClick={() => setChatMode('analysis')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-mono transition-all flex-shrink-0 ${
+                chatMode === 'analysis'
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              Analysis
+            </button>
+            <button
+              onClick={() => setChatMode('chat')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                chatMode === 'chat'
+                  ? 'bg-[#4a9eff]/10 text-[#4a9eff] border border-[#4a9eff]/20'
+                  : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              <Mic className="w-3 h-3" /> Chat
+            </button>
+            <span className="w-px h-4 bg-white/10 mx-1 flex-shrink-0" />
+            <Link href="/create" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-[#4a9eff] hover:bg-[#4a9eff]/10 flex-shrink-0">
+              <PenLine className="w-3 h-3" /> Create
+            </Link>
+            <Link href="/linkedin-optimizer" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-[#0A66C2] hover:bg-[#0A66C2]/10 flex-shrink-0">
+              <Linkedin className="w-3 h-3" /> LinkedIn
+            </Link>
+            <Link href="/github-enhancer" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0">
+              <Github className="w-3 h-3" /> GitHub
+            </Link>
+            <Link href="/social-post" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-[#a855f7] hover:bg-[#a855f7]/10 flex-shrink-0">
+              <Sparkles className="w-3 h-3" /> Post Maker
+            </Link>
+            <Link href="/x-analyzer" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-[#1DA1F2] hover:bg-[#1DA1F2]/10 flex-shrink-0">
+              <Twitter className="w-3 h-3" /> X Analyzer
+            </Link>
+            <Link href="/history" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-[#eab308] hover:bg-[#eab308]/10 flex-shrink-0">
+              <History className="w-3 h-3" /> History
+            </Link>
+          </div>
+
           <div className="relative bg-[#111] border border-white/10 focus-within:border-white/30 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-colors">
-            
+
             <textarea
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the target job description here..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && chatMode === 'chat') {
+                  e.preventDefault()
+                  handleSend()
+                }
+              }}
+              placeholder={chatMode === 'analysis' ? 'Paste the target job description here...' : 'Ask Shruti anything about your resume...'}
               className="w-full bg-transparent text-sm text-white placeholder:text-white/30 resize-none p-4 min-h-[60px] max-h-[150px] outline-none"
               rows={jobDescription.split('\n').length > 2 ? 3 : 1}
             />
-            
+
             <div className="flex items-center justify-between px-3 pb-3">
               <div className="flex gap-2">
-                <input 
-                  type="file" 
-                  accept=".pdf,.docx,.txt" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  className="hidden"
                   ref={fileInputRef}
                   onChange={handleFileSelect}
                 />
-                <button 
+                <button
                   onClick={() => fileInputRef.current?.click()}
                   className="p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors"
                 >
@@ -889,23 +1197,50 @@ export default function DashboardChat() {
                 </button>
               </div>
 
-              <Button 
-                onClick={startAnalysis}
-                disabled={isSubmitting || !jobDescription.trim()}
-                size="icon"
-                className="w-9 h-9 rounded-xl bg-white hover:bg-gray-200 text-black shadow-lg disabled:opacity-50 transition-all disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4 mr-0.5" />
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Mic Button */}
+                <button
+                  onClick={toggleListening}
+                  disabled={isProcessingChat}
+                  className={`p-2 rounded-xl transition-all ${
+                    isListening
+                      ? 'bg-red-500/20 text-red-400 animate-pulse'
+                      : isSpeaking
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'text-white/50 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {isListening ? (
+                    <Square className="w-5 h-5 fill-current" />
+                  ) : (
+                    <Mic className="w-5 h-5" />
+                  )}
+                </button>
+
+                {/* Send Button */}
+                <Button
+                  onClick={handleSend}
+                  disabled={
+                    isSubmitting || isProcessingChat ||
+                    (chatMode === 'analysis' ? !jobDescription.trim() : !jobDescription.trim())
+                  }
+                  size="icon"
+                  className="w-9 h-9 rounded-xl bg-white hover:bg-gray-200 text-black shadow-lg disabled:opacity-50 transition-all disabled:cursor-not-allowed"
+                >
+                  {(isSubmitting || isProcessingChat) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-0.5" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
-          
+
           <div className="text-center mt-3">
-            <p className="text-[10px] text-white/30">ResuMax AI can make mistakes. Verify critical information.</p>
+            <p className="text-[10px] text-white/30">
+              {isListening ? 'Listening... tap mic to stop' : isSpeaking ? 'Shruti is speaking...' : 'ResuMax AI can make mistakes. Verify critical information.'}
+            </p>
           </div>
         </div>
       </div>

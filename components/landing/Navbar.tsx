@@ -17,7 +17,9 @@ const navTabs = [
   { id: '/', label: 'Home' },
   { id: '#pipeline', label: 'Work' },
   { id: '#components', label: 'Features' },
+  { id: '#feedback', label: 'Feedback' },
   { id: '#pricing', label: 'Pricing' },
+  { id: '#faq', label: 'FAQ' },
 ]
 
 export function Navbar() {
@@ -29,6 +31,42 @@ export function Navbar() {
   
   const [user, setUser] = useState<any>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
+  const [activeTab, setActiveTab] = useState<string>('/')
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (pathname !== '/') return
+
+      const sections = navTabs.map(t => t.id).filter(id => id.startsWith('#'))
+      let currentActive = '/'
+
+      for (const id of sections) {
+        const element = document.querySelector(id)
+        if (element) {
+          const rect = element.getBoundingClientRect()
+          // 40% of viewport from top
+          if (rect.top <= window.innerHeight * 0.4) {
+            currentActive = id
+          }
+        }
+      }
+
+      if (window.scrollY < window.innerHeight * 0.2) {
+        currentActive = '/'
+      }
+
+      setActiveTab(currentActive)
+    }
+
+    if (pathname === '/') {
+      window.addEventListener('scroll', handleScroll, { passive: true })
+      handleScroll()
+    } else {
+      setActiveTab(pathname) // fallback for other routes
+    }
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [pathname])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -75,16 +113,20 @@ export function Navbar() {
       <div className="flex items-center">
         <ContinuousTabs 
           tabs={navTabs} 
-          defaultActiveId='/'
+          activeId={activeTab}
           onChange={(id) => {
-            if (id === '/' && pathname === '/') {
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-              return
-            }
-            if (id.startsWith('#')) {
-              router.push(`/${id}`)
+            setActiveTab(id)
+            if (pathname === '/') {
+               if (id === '/') {
+                 window.scrollTo({ top: 0, behavior: 'smooth' })
+               } else if (id.startsWith('#')) {
+                 const el = document.querySelector(id)
+                 if (el) el.scrollIntoView({ behavior: 'smooth' })
+               } else {
+                 router.push(id)
+               }
             } else {
-              router.push(id)
+               router.push(id.startsWith('#') ? `/${id}` : id)
             }
           }} 
         />

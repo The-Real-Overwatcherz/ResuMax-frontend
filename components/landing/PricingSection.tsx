@@ -10,6 +10,7 @@ const pricingPlans: Plan[] = [
     featuresLabel: 'WHAT YOU GET:',
     features: [
       { text: "3 Resume optimizes that's it", hasInfo: false },
+      { text: "3 LinkedIn post generations", hasInfo: false },
     ],
   },
   {
@@ -26,6 +27,9 @@ const pricingPlans: Plan[] = [
       { text: 'LinkedIn Optimizer', hasInfo: true },
       { text: 'X Optimizer', hasInfo: true },
       { text: 'Github Optimizer', hasInfo: true },
+      { text: 'LinkedIn post maker', hasInfo: false },
+      { text: 'X post maker', hasInfo: false },
+      { text: 'Tracks post context for Shruti to suggest next posts', hasInfo: true },
     ],
   },
 ];

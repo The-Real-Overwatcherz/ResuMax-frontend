@@ -46,6 +46,17 @@ export default function VoiceChatPage() {
   const [textInput, setTextInput] = useState('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const resumeContextRef = useRef('')
+  const messagesRef = useRef<ChatMessage[]>([])
+
+  // Keep refs in sync with state (avoids stale closures)
+  useEffect(() => {
+    resumeContextRef.current = resumeContext
+  }, [resumeContext])
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
 
   // Auth
   useEffect(() => {
@@ -155,7 +166,7 @@ export default function VoiceChatPage() {
 
   const sendMessage = useCallback(
     async (text: string) => {
-      if (!text.trim() || isProcessing) return
+      if (!text.trim()) return
 
       const userMsg: ChatMessage = {
         id: Date.now().toString(),
@@ -173,6 +184,10 @@ export default function VoiceChatPage() {
         } = await supabase.auth.getSession()
         if (!session) return
 
+        // Read from refs to always get latest values (avoids stale closures)
+        const currentResumeContext = resumeContextRef.current
+        const currentMessages = messagesRef.current
+
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
         const res = await fetch(`${apiUrl}/api/voice-chat/ask`, {
           method: 'POST',
@@ -182,8 +197,8 @@ export default function VoiceChatPage() {
           },
           body: JSON.stringify({
             question: text.trim(),
-            resume_context: resumeContext,
-            conversation_history: messages
+            resume_context: currentResumeContext,
+            conversation_history: currentMessages
               .concat(userMsg)
               .slice(-10)
               .map((m) => ({ role: m.role, content: m.content })),
@@ -217,7 +232,7 @@ export default function VoiceChatPage() {
         setIsProcessing(false)
       }
     },
-    [isProcessing, resumeContext, messages, playAudio],
+    [playAudio],
   )
 
   const toggleListening = () => {
@@ -266,30 +281,42 @@ export default function VoiceChatPage() {
 
         const formData = new FormData()
         formData.append('resume', file)
-        formData.append('job_description', 'General review')
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-        // Use the analysis start just to parse, or just read as text
-        // For simplicity, read as text if possible
-        const reader = new FileReader()
-        reader.onload = (ev) => {
-          const text = ev.target?.result as string
-          if (text) {
-            setResumeContext(text.slice(0, 5000))
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                role: 'assistant',
-                content: `I've loaded your resume "${file.name}". Ask me anything about it!`,
-                timestamp: Date.now(),
-              },
-            ])
-          }
+        const res = await fetch(`${apiUrl}/api/voice-chat/parse-resume`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: formData,
+        })
+
+        if (!res.ok) throw new Error('Failed to parse resume')
+        const data = await res.json()
+
+        if (data.text) {
+          setResumeContext(data.text.slice(0, 5000))
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: `I've loaded your resume "${file.name}". Ask me anything about it!`,
+              timestamp: Date.now(),
+            },
+          ])
         }
-        reader.readAsText(file)
       } catch (err) {
         console.error('File upload error:', err)
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `Sorry, I couldn't read that file. Please try uploading a .pdf, .docx, or .txt file.`,
+            timestamp: Date.now(),
+          },
+        ])
       }
     }
   }
