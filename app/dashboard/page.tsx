@@ -138,6 +138,12 @@ export default function DashboardChat() {
 
       const sessionName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
 
+      const oldResumeText = analysisData.resume_text || 
+        (analysisData.parsed_resume ? JSON.stringify(analysisData.parsed_resume) : "");
+      if (oldResumeText) {
+        setResumeContext(`Resume:\n${oldResumeText.slice(0, 4000)}\n\nJob Description:\n${(analysisData.job_description || "").slice(0, 1000)}`);
+      }
+
       setMessages([
         {
           id: Date.now().toString(),

@@ -6,7 +6,9 @@ import { gsap } from '@/lib/gsap-config'
 import { supabase } from '@/lib/supabase'
 import { useResumeBuilder } from '@/hooks/useResumeBuilder'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { ResumeBuilderShell } from '@/components/resume-builder/ResumeBuilderShell'
+import { AIChatBuilder } from '@/components/resume-builder/AIChatBuilder'
+import { ResumePreview } from '@/components/resume-builder/ResumePreview'
+import { Download, FileText } from 'lucide-react'
 import { printResume } from '@/lib/resume-pdf'
 import Link from 'next/link'
 import { Linkedin } from 'lucide-react'
@@ -163,13 +165,36 @@ function CreateResumeContent() {
           </div>
         </div>
 
-        {/* Builder */}
-        <div className="flex-1 mx-4 sm:mx-6 mb-4 rounded-[1.5rem] bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl overflow-hidden flex flex-col min-h-0">
-          <ResumeBuilderShell
-            {...builder}
-            onExportPDF={handleExportPDF}
-            onExportDOCX={handleExportDOCX}
-          />
+        {/* Chat & Preview split */}
+        <div className="flex-1 mx-4 sm:mx-6 mb-4 flex min-h-0 gap-4">
+          
+          {/* Chat Panel */}
+          <div className="w-full lg:w-[45%] flex flex-col min-h-0">
+            <AIChatBuilder {...builder} />
+          </div>
+
+          {/* Preview Panel */}
+          <div className="hidden lg:flex w-[55%] flex-col bg-white/[0.02] border border-white/[0.06] rounded-[1.5rem] p-6 items-center justify-start overflow-auto">
+            <div className="w-full flex justify-end gap-2 mb-4">
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-sm transition-colors border border-white/10"
+              >
+                <Download className="w-4 h-4" />
+                PDF
+              </button>
+              <button
+                onClick={handleExportDOCX}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-sm transition-colors border border-white/10"
+              >
+                <FileText className="w-4 h-4" />
+                DOCX
+              </button>
+            </div>
+            
+            <ResumePreview resumeData={builder.resumeData} />
+          </div>
+
         </div>
       </div>
     </div>
