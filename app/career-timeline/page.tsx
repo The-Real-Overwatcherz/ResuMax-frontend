@@ -307,7 +307,7 @@ export default function CareerTimelinePage() {
                             </div>
                             <p className="text-xs font-semibold text-white">{g.start} — {g.end}</p>
                             <div className="p-2 rounded-lg bg-black/40 border border-white/5 mt-1">
-                              <p className="text-[9px] text-white/40 uppercase mb-1">Shruti's Tip:</p>
+                              <p className="text-[9px] text-white/40 uppercase mb-1">Shruti&apos;s Tip:</p>
                               <p className="text-[10px] text-white/70 leading-relaxed italic">{g.suggestion}</p>
                             </div>
                           </div>

@@ -174,7 +174,7 @@ export default function SkillGapPage() {
                    <img src="/shruti.png" alt="Shruti" className="w-full h-full object-cover" />
                  </div>
                  <p className="text-xs text-white/60 leading-relaxed max-w-[240px]">
-                   &quot;I'll compare your resume against multiple roles to find the <strong className="text-white">pattern of skills</strong> you're missing across your target industry.&quot;
+                   &quot;I&apos;ll compare your resume against multiple roles to find the <strong className="text-white">pattern of skills</strong> you&apos;re missing across your target industry.&quot;
                  </p>
                </div>
             </div>
