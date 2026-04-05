@@ -16,8 +16,9 @@ import { ContinuousTabs } from '@/components/ui/continuous-tabs'
 const navTabs = [
   { id: '/', label: 'Home' },
   { id: '#pipeline', label: 'Work' },
-  { id: '#components', label: 'Features' },
-  { id: '#feedback', label: 'Feedback' },
+  { id: '#components', label: 'Engine' },
+  { id: '#features', label: 'Features' },
+  { id: '#shruti', label: 'Shruti' },
   { id: '#pricing', label: 'Pricing' },
   { id: '#faq', label: 'FAQ' },
 ]

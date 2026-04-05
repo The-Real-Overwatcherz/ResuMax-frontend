@@ -226,8 +226,8 @@ export default function SocialPostPage() {
           <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Shruti chat bubble */}
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white to-gray-400 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                <Hexagon className="w-5 h-5 text-black fill-current" />
+              <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-white/20 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                <img src="/shruti.png" alt="Shruti" className="w-full h-full object-cover" />
               </div>
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-tl-sm px-5 py-4 max-w-lg">
                 <p className="text-sm text-white/80 leading-relaxed">
@@ -277,8 +277,8 @@ export default function SocialPostPage() {
 
             {/* Shruti asks for details */}
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white to-gray-400 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                <Hexagon className="w-5 h-5 text-black fill-current" />
+              <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-white/20 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                <img src="/shruti.png" alt="Shruti" className="w-full h-full object-cover" />
               </div>
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-tl-sm px-5 py-4 max-w-lg">
                 <p className="text-sm text-white/80 leading-relaxed">

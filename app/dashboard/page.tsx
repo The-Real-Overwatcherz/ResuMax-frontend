@@ -7,10 +7,12 @@ import { useRouter } from 'next/navigation'
 import {
   FileText, CheckCircle2, Loader2, Download, Menu, Plus, MessageSquare, Clock, Trash2,
   Settings, X, Send, Paperclip, Hexagon, LogOut, ChevronRight, PenLine, Linkedin, Mic,
-  Volume2, VolumeX, Square, MicOff, Github, History, Sparkles, Twitter
+  Volume2, VolumeX, Square, MicOff, Github, History, Sparkles, Twitter, Radio, Grid
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 
 
@@ -45,8 +47,8 @@ interface Message {
 
 // Sub-components for chat bubbles
 const ShrutiAvatar = () => (
-  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white to-gray-400 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-    <Hexagon className="w-5 h-5 text-black fill-current" />
+  <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-white/20 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+    <img src="/shruti.png" alt="Shruti" className="w-full h-full object-cover" />
   </div>
 )
 
@@ -607,6 +609,35 @@ export default function DashboardChat() {
             <Plus className="w-4 h-4" /> New Analysis
           </button>
 
+          <Link
+            href="/mock-interview"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 transition-colors text-xs text-red-400 hover:text-red-300"
+          >
+            <Radio className="w-4 h-4" /> Mock Interview
+          </Link>
+
+          <Link
+            href="/career-timeline"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 transition-colors text-xs text-blue-400 hover:text-blue-300"
+          >
+            <History className="w-4 h-4" /> Career Timeline
+          </Link>
+
+          <Link
+            href="/skill-gap"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-colors text-xs text-purple-400 hover:text-purple-300"
+          >
+            <Grid className="w-4 h-4" /> Skill Gap Heatmap
+          </Link>
+
+          <Link
+            href="/cold-outreach"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-green-500/20 bg-green-500/5 hover:bg-green-500/10 transition-colors text-xs text-green-400 hover:text-green-300"
+          >
+            <Send className="w-4 h-4" /> Cold Outreach
+          </Link>
+
+
           <div className="pt-4 space-y-1">
             <p className="px-3 text-[10px] text-white/40 font-mono mb-2 uppercase">Past Analyses</p>
             {loadingHistory ? (
@@ -745,11 +776,30 @@ export default function DashboardChat() {
 
           // VOICE ASSISTANT MESSAGE (chat mode)
           if (msg.type === 'voice_assistant') {
+            const hasMarkdown = (msg.messageText || '').includes('#') || (msg.messageText || '').includes('**') || (msg.messageText || '').includes('- ')
             return (
               <div key={msg.id} className="flex gap-4 items-start w-full animate-in fade-in slide-in-from-bottom-2">
                 <ShrutiAvatar />
-                <div className="max-w-[80%] bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/80 leading-relaxed">
-                  {msg.messageText}
+                <div className={`bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/80 leading-relaxed ${hasMarkdown ? 'max-w-[90%] w-full' : 'max-w-[80%]'}`}>
+                  {hasMarkdown ? (
+                    <div className="prose prose-invert prose-sm max-w-none
+                      [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-white [&_h1]:mb-3 [&_h1]:mt-2
+                      [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-blue-300 [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:pb-1 [&_h2]:border-b [&_h2]:border-white/10
+                      [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-white/90 [&_h3]:mb-1 [&_h3]:mt-3
+                      [&_strong]:text-white/95 [&_strong]:font-semibold
+                      [&_ul]:space-y-1 [&_ul]:my-2 [&_ul]:pl-1
+                      [&_ol]:space-y-1 [&_ol]:my-2
+                      [&_li]:text-white/70 [&_li]:text-xs [&_li]:leading-relaxed
+                      [&_p]:text-white/75 [&_p]:text-xs [&_p]:leading-relaxed [&_p]:my-1.5
+                      [&_a]:text-blue-400 [&_a]:underline [&_a]:underline-offset-2
+                      [&_code]:text-[11px] [&_code]:bg-white/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-green-300
+                      [&_hr]:border-white/10 [&_hr]:my-3
+                    ">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.messageText || ''}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.messageText
+                  )}
                 </div>
               </div>
             )
@@ -1163,6 +1213,9 @@ export default function DashboardChat() {
             </Link>
             <Link href="/x-analyzer" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-[#1DA1F2] hover:bg-[#1DA1F2]/10 flex-shrink-0">
               <Twitter className="w-3 h-3" /> X Analyzer
+            </Link>
+            <Link href="/mock-interview" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 flex-shrink-0">
+              <Radio className="w-3 h-3" /> Interview
             </Link>
             <Link href="/history" className="px-3 py-1.5 rounded-full text-[11px] font-mono flex items-center gap-1.5 text-white/40 hover:text-[#eab308] hover:bg-[#eab308]/10 flex-shrink-0">
               <History className="w-3 h-3" /> History

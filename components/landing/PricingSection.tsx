@@ -29,7 +29,6 @@ const pricingPlans: Plan[] = [
       { text: 'Github Optimizer', hasInfo: true },
       { text: 'LinkedIn post maker', hasInfo: false },
       { text: 'X post maker', hasInfo: false },
-      { text: 'Tracks post context for Shruti to suggest next posts', hasInfo: true },
     ],
   },
 ];

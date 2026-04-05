@@ -436,8 +436,8 @@ export default function VoiceChatPage() {
             >
               {/* Avatar */}
               {msg.role === 'assistant' ? (
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-white to-gray-400 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.15)]">
-                  <Hexagon className="w-5 h-5 text-black fill-current" />
+                <div className="w-9 h-9 rounded-xl overflow-hidden border-2 border-white/20 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.15)]">
+                  <img src="/shruti.png" alt="Shruti" className="w-full h-full object-cover" />
                 </div>
               ) : (
                 <div className="w-9 h-9 rounded-full bg-[#4a9eff]/20 border border-[#4a9eff]/50 flex items-center justify-center flex-shrink-0">
@@ -461,8 +461,8 @@ export default function VoiceChatPage() {
           {/* Processing indicator */}
           {isProcessing && (
             <div className="flex gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-white to-gray-400 flex items-center justify-center flex-shrink-0">
-                <Hexagon className="w-5 h-5 text-black fill-current" />
+              <div className="w-9 h-9 rounded-xl overflow-hidden border-2 border-white/20 flex items-center justify-center flex-shrink-0">
+                <img src="/shruti.png" alt="Shruti" className="w-full h-full object-cover" />
               </div>
               <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white/[0.04] border border-white/[0.06]">
                 <div className="flex items-center gap-2">

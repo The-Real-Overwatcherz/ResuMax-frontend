@@ -136,9 +136,9 @@ function CreateResumeContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] flex flex-col">
+    <div className="h-[100dvh] overflow-hidden bg-[#080808] flex flex-col pt-16 md:pt-4">
 
-      <div ref={containerRef} className="flex-1 flex flex-col pt-4 opacity-0">
+      <div ref={containerRef} className="flex-1 flex flex-col opacity-0 min-h-0">
         {/* Header */}
         <div className="flex-shrink-0 px-6 sm:px-8 pb-4">
           <div className="flex items-center justify-between">

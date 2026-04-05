@@ -10,6 +10,8 @@ import { OptimizerSection } from '@/components/landing/OptimizerSection'
 import { PricingSection } from '@/components/landing/PricingSection'
 import { FAQSection } from '@/components/landing/FAQSection'
 import { SiteFooter } from '@/components/landing/SiteFooter'
+import { FeaturesShowcase } from '@/components/landing/FeaturesShowcase'
+import { ShrutiShowcase } from '@/components/landing/ShrutiShowcase'
 
 const SceneCanvas = dynamic(() => import('@/components/three/SceneCanvas'), {
   ssr: false,
@@ -26,6 +28,8 @@ export default function LandingPage() {
         <ComponentsSection />
         <FeedbackSection />
         <OptimizerSection />
+        <FeaturesShowcase />
+        <ShrutiShowcase />
         <PricingSection />
         <FAQSection />
         <SiteFooter />

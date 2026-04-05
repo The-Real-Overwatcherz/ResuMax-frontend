@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Loader2 } from 'lucide-react'
+import { Send, Bot, User, Loader2, Hexagon } from 'lucide-react'
 import { gsap } from '@/lib/gsap-config'
 import type { useResumeBuilder } from '@/hooks/useResumeBuilder'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -10,12 +10,18 @@ type BuilderHook = ReturnType<typeof useResumeBuilder>
 
 interface AIChatBuilderProps extends BuilderHook { }
 
+const ShrutiAvatar = () => (
+  <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-white/20 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+    <img src="/shruti.png" alt="Shruti" className="w-full h-full object-cover" />
+  </div>
+)
+
 export function AIChatBuilder(props: AIChatBuilderProps) {
   const { resumeData, setResumeData, setIsDirty } = props
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
     {
       role: 'assistant',
-      content: "Hello! I'm your AI Resume Assistant. Let's start building your ATS-optimized resume. What is your full name and what role are you applying for?"
+      content: "Hello! I'm Shruti, your AI Advisor. Let's start building your ATS-optimized resume. What is your full name and what role are you applying for?"
     }
   ])
   const [input, setInput] = useState('')
@@ -84,11 +90,11 @@ export function AIChatBuilder(props: AIChatBuilderProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#080808] border border-white/[0.06] rounded-[1.5rem] overflow-hidden ml-4 my-4 relative">
+    <div className="flex flex-col h-full bg-[#080808] border border-white/[0.06] rounded-[1.5rem] overflow-hidden relative">
       <div className="flex-shrink-0 p-4 border-b border-white/5 bg-white/[0.02]">
         <h2 className="text-white font-semibold flex items-center gap-2">
-          <Bot className="w-5 h-5 text-[#4a9eff]" />
-          AI Resume Builder
+          <ShrutiAvatar />
+          Shruti Resume Builder
         </h2>
         <p className="text-white/40 text-xs mt-1">Answer simple questions and watch your resume build automatically.</p>
       </div>
@@ -101,9 +107,7 @@ export function AIChatBuilder(props: AIChatBuilderProps) {
               className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-[#4a9eff]/10 flex items-center justify-center flex-shrink-0 border border-[#4a9eff]/20">
-                  <Bot className="w-4 h-4 text-[#4a9eff]" />
-                </div>
+                <ShrutiAvatar />
               )}
               
               <div 
@@ -125,9 +129,7 @@ export function AIChatBuilder(props: AIChatBuilderProps) {
           ))}
           {isLoading && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-[#4a9eff]/10 flex items-center justify-center flex-shrink-0 border border-[#4a9eff]/20">
-                <Bot className="w-4 h-4 text-[#4a9eff]" />
-              </div>
+              <ShrutiAvatar />
               <div className="bg-white/5 rounded-2xl rounded-bl-none p-4 flex items-center gap-2 border border-white/5">
                 <Loader2 className="w-4 h-4 animate-spin text-[#4a9eff]" />
                 <span className="text-xs text-white/40">Thinking...</span>
